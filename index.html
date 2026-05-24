@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGIS-Neurosynk</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="#sidebar">
+        <h2>Neurodivergência na PB</h2>
+        <p>Análise geográfica de casos de TEA e TDAH.</p>
+        <hr>
+        
+        <div class="filtro-grupo">
+            <label for="busca">Buscar Município:</label>
+            <input type="text" id="busca" placeholder="Digite o nome da cidade...">
+        </div>
+
+        <div class="filtro-grupo">
+            <label for="filtro-condicao">Visualizar por:</label>
+            <select id="filtro-condicao">
+                <option value="tea">Casos de TEA (Autismo)</option>
+                <option value="tdah">Casos de TDAH</option>
+                <option value="caps">Atendimentos CAPS</option>
+            </select>
+        </div>
+
+        <div id="info-painel" style="margin-top: 20px; background: #e9ecef; padding: 15px; border-radius: 4px;">
+            <h3>Detalhes do Município</h3>
+            <p>Clique em uma cidade no mapa para ver os dados detalhados.</p>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([-7.12, -36.72], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        map.locate({setView: true, maxZoom: 10});
+        fetch('municipios.json')
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: function(feature) {
+                        return {
+                            color: "#3b82f6", 
+                            weight: 1.5,
+                            fillColor: "#93c5fd",
+                            fillOpacity: 0.6
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const nomeCidade = feature.properties.name || feature.properties.NM_MUN; 
+                        const codigoIBGE = feature.properties.code || feature.properties.CD_MUN;
+
+                        layer.bindPopup(`<b>Município:</b> ${nomeCidade}<br><b>Código IBGE:</b> ${codigoIBGE}`);
+                        layer.on('click', function() {
+                            document.getElementById('info-painel').innerHTML = `
+                                <h3>${nomeCidade}</h3>
+                                <p><b>Código IBGE:</b> ${codigoIBGE}</p>
+                                <p style="color: gray; font-size: 13px;">Aguardando dados do Supabase...</p>
+                            `;
+                        });
+                    }
+                }).addTo(map);
+            })
+            .catch(error => console.error('Erro ao carregar o arquivo dos municípios:', error));
+    </script>
+</body>
+</html>
